@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Página não encontrada | GSEL</title>
+  <meta name="robots" content="noindex">
+  <!-- Caminho base do site no GitHub Pages; troque por "/" se o site passar a usar domínio próprio. -->
+  <base href="/site/">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@600;700&family=Saira+Semi+Condensed:wght@800&family=Saira:wght@300;400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/style.css">
+  <style>
+    .notfound {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 1.5rem;
+      min-height: 100vh;
+      padding: 3rem 1.5rem;
+      background: var(--azul-profundo);
+      color: #d5dee7;
+      text-align: center;
+    }
+    .notfound img { height: 4.5rem; width: auto; }
+    .notfound h1 {
+      font-weight: 800;
+      font-size: clamp(4rem, 14vw, 7rem);
+      line-height: 1;
+      color: var(--ciano);
+    }
+    .notfound p { max-width: 32rem; font-size: 1.125rem; font-weight: 300; }
+  </style>
+</head>
+<body>
+  <main class="notfound">
+    <img src="assets/img/marca/gsel-horizontal-branco.svg" alt="GSEL — Grupo de Pesquisa em Sistemas Elétricos">
+    <h1>404</h1>
+    <p>A página que você procura não existe ou mudou de endereço.</p>
+    <a class="btn btn--ciano" href="./">Voltar ao início</a>
+  </main>
+</body>
+</html>
