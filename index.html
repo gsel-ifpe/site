@@ -508,14 +508,15 @@
         </div>
 
         <ol class="steps reveal">
-          <li><span class="step-num">1</span>Escolha o equipamento</li>
-          <li><span class="step-num">2</span>Preencha os dados da solicitação</li>
-          <li><span class="step-num">3</span>Envie o e-mail gerado ao GSEL</li>
+          <li><span class="step-num">1</span>Escolha o equipamento e preencha os dados</li>
+          <li><span class="step-num">2</span>Confirme seu e-mail pelo link que enviaremos</li>
+          <li><span class="step-num">3</span>Receba por e-mail a resposta do GSEL</li>
         </ol>
 
         <div class="booking reveal">
-          <!-- O formulário não envia dados a nenhum servidor: ele monta um e-mail para o endereço em data-email. -->
-          <form class="booking-form" id="form-reserva" data-email="gsel@garanhuns.ifpe.edu.br" novalidate>
+          <!-- data-endpoint: endereço do app da Web do serviço de reservas (apps-script/LEIAME.md). Ele verifica o
+               e-mail do solicitante e pede a autorização do GSEL. Vazio, o site apenas monta um e-mail para data-email. -->
+          <form class="booking-form" id="form-reserva" data-endpoint="" data-email="gsel@garanhuns.ifpe.edu.br" novalidate>
             <p class="booking-note">Campos marcados com <span class="req">*</span> são obrigatórios.</p>
 
             <fieldset class="booking-block">
@@ -568,6 +569,12 @@
                   <p class="field-error" id="nome-erro"></p>
                 </div>
                 <div class="field">
+                  <label for="email">E-mail: <span class="req" aria-hidden="true">*</span></label>
+                  <input id="email" name="email" type="email" autocomplete="email" maxlength="160" spellcheck="false" required aria-describedby="email-dica email-erro">
+                  <p class="field-help" id="email-dica">Enviaremos um link para você confirmar este e-mail.</p>
+                  <p class="field-error" id="email-erro"></p>
+                </div>
+                <div class="field">
                   <label for="telefone">Telefone para contato: <span class="req" aria-hidden="true">*</span></label>
                   <input id="telefone" name="telefone" type="tel" inputmode="tel" autocomplete="tel-national" maxlength="15" placeholder="(xx) xxxxx xxxx" required aria-describedby="telefone-erro">
                   <p class="field-error" id="telefone-erro"></p>
@@ -614,11 +621,29 @@
               </div>
             </fieldset>
 
+            <div class="armadilha" aria-hidden="true">
+              <label for="site">Deixe este campo em branco</label>
+              <input id="site" name="site" type="text" tabindex="-1" autocomplete="off">
+            </div>
+
             <div class="booking-actions">
-              <p class="booking-privacy"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-shield"/></svg>Os dados não ficam salvos no site: a solicitação é enviada pelo seu próprio e-mail para gsel@garanhuns.ifpe.edu.br.</p>
+              <p class="booking-privacy"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-shield"/></svg>Seus dados são usados apenas para analisar e responder à sua solicitação de reserva.</p>
               <button class="btn btn--azul" type="submit">Enviar solicitação <svg class="icon-sm" aria-hidden="true" focusable="false"><use href="#i-arrow"/></svg></button>
             </div>
+
+            <div class="booking-alert" id="reserva-alerta" role="alert" hidden>
+              <p id="reserva-alerta-texto"></p>
+              <button class="btn btn--linha" type="button" id="reserva-por-email" hidden>Enviar por e-mail</button>
+            </div>
           </form>
+
+          <div class="booking-done" id="reserva-enviada" tabindex="-1" aria-labelledby="reserva-enviada-titulo" hidden>
+            <span class="done-icon" aria-hidden="true"><svg class="icon" focusable="false"><use href="#i-mail"/></svg></span>
+            <h3 id="reserva-enviada-titulo">Confirme seu e-mail</h3>
+            <p>Enviamos um link de confirmação para <strong id="reserva-enviada-email"></strong>. Abra a mensagem e clique em <strong>Confirmar e-mail</strong> para que a solicitação chegue ao GSEL.</p>
+            <p class="done-tip">O link vale por 24 horas. Se não encontrar a mensagem, procure na caixa de spam. Depois da análise, você recebe a resposta do GSEL por e-mail.</p>
+            <button class="text-link done-reset" type="button" data-reserva-nova>Fazer nova solicitação</button>
+          </div>
 
           <div class="booking-done" id="reserva-pronta" tabindex="-1" aria-labelledby="reserva-pronta-titulo" hidden>
             <span class="done-icon" aria-hidden="true"><svg class="icon" focusable="false"><use href="#i-tick"/></svg></span>
@@ -632,7 +657,7 @@
               <button class="btn btn--linha" type="button" id="reserva-copiar">Copiar mensagem</button>
             </div>
             <pre class="done-preview" id="reserva-texto"></pre>
-            <button class="text-link done-reset" type="button" id="reserva-nova">Fazer nova solicitação</button>
+            <button class="text-link done-reset" type="button" data-reserva-nova>Fazer nova solicitação</button>
           </div>
         </div>
       </div>

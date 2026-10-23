@@ -163,11 +163,11 @@
     });
   }
 
-  /* Reserva de equipamentos: monta um e-mail com os dados do formulário */
+  /* Reserva de equipamentos */
   var form = document.getElementById('form-reserva');
   if (form) {
+    var endpoint = (form.getAttribute('data-endpoint') || '').trim();
     var email = form.getAttribute('data-email');
-    var done = document.getElementById('reserva-pronta');
     var radios = form.querySelectorAll('input[name="equipamento"]');
     var descLabel = document.getElementById('descricao-rotulo');
     var descDefault = descLabel.textContent;
@@ -177,11 +177,21 @@
     var agendaGroup = document.getElementById('grupo-agenda');
     var phone = document.getElementById('telefone');
     var date = document.getElementById('data');
+    var submitBtn = form.querySelector('button[type="submit"]');
+    var submitLabel = submitBtn.innerHTML;
+    var alertBox = document.getElementById('reserva-alerta');
+    var alertText = document.getElementById('reserva-alerta-texto');
+    var mailFallback = document.getElementById('reserva-por-email');
+    var sentPanel = document.getElementById('reserva-enviada');
+    var mailPanel = document.getElementById('reserva-pronta');
     var preview = document.getElementById('reserva-texto');
     var mailLink = document.getElementById('reserva-email');
     var gmailLink = document.getElementById('reserva-gmail');
     var copyBtn = document.getElementById('reserva-copiar');
-    var textFields = form.querySelectorAll('input:not([type="radio"]), textarea, select');
+    var requiredFields = form.querySelectorAll('input[required]:not([type="radio"]), textarea[required], select[required]');
+
+    // Sem o serviço de reservas configurado não existe link de confirmação para anunciar.
+    if (!endpoint) document.getElementById('email-dica').hidden = true;
 
     var chosen = function () {
       return form.querySelector('input[name="equipamento"]:checked');
@@ -228,6 +238,8 @@
         if (!chosen()) msg = 'Escolha o equipamento que deseja reservar.';
       } else if (!value) {
         msg = el.tagName === 'SELECT' ? 'Selecione uma opção.' : 'Preencha este campo.';
+      } else if (el.type === 'email') {
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) msg = 'Informe um e-mail válido, por exemplo nome@exemplo.com.';
       } else if (el === phone) {
         var digits = value.replace(/\D/g, '').length;
         if (digits < 10 || digits > 11) msg = 'Informe o telefone com DDD, por exemplo (87) 91234 5678.';
@@ -268,7 +280,7 @@
       });
     });
 
-    textFields.forEach(function (el) {
+    requiredFields.forEach(function (el) {
       el.addEventListener('blur', function () {
         if (el.value.trim()) check(el);
       });
@@ -279,9 +291,80 @@
 
     updateEquipment();
 
+    var collect = function () {
+      var data = {
+        equipamento: chosen().value,
+        nome: fieldValue('nome'),
+        email: fieldValue('email'),
+        telefone: fieldValue('telefone'),
+        projeto: fieldValue('projeto'),
+        descricao: fieldValue('descricao'),
+        site: fieldValue('site')
+      };
+      if (!qtyGroup.hidden) data.quantidade = fieldValue('quantidade');
+      if (!agendaGroup.hidden) {
+        data.data = fieldValue('data');
+        data.periodo = fieldValue('periodo');
+      }
+      return data;
+    };
+
+    var showPanel = function (panel) {
+      form.hidden = true;
+      sentPanel.hidden = panel !== sentPanel;
+      mailPanel.hidden = panel !== mailPanel;
+      panel.focus();
+    };
+
+    var setBusy = function (busy) {
+      submitBtn.disabled = busy;
+      if (busy) {
+        submitBtn.setAttribute('aria-busy', 'true');
+        submitBtn.textContent = 'Enviando...';
+      } else {
+        submitBtn.removeAttribute('aria-busy');
+        submitBtn.innerHTML = submitLabel;
+      }
+    };
+
+    var showAlert = function (message, offerEmail) {
+      alertText.textContent = message;
+      mailFallback.hidden = !offerEmail;
+      alertBox.hidden = false;
+    };
+
+    // Plano B: monta a mensagem e abre o aplicativo de e-mail do visitante.
+    var sendByEmail = function (data) {
+      var lines = [
+        'Solicitação de reserva de equipamento do LabSEL',
+        '',
+        'Equipamento: ' + data.equipamento,
+        'Nome do solicitante: ' + data.nome,
+        'E-mail: ' + data.email,
+        'Telefone para contato: ' + data.telefone,
+        'Projeto vinculado: ' + data.projeto,
+        '',
+        'Descrição e objetivo da demanda:',
+        data.descricao
+      ];
+      if (data.quantidade) lines.push('', 'Quantidade: ' + data.quantidade);
+      if (data.data) lines.push('', 'Data desejada: ' + formatDate(data.data), 'Período: ' + data.periodo);
+      lines.push('', 'Solicitação enviada pelo site do GSEL.');
+
+      var subject = 'Reserva de equipamento: ' + data.equipamento + ' (' + data.nome + ')';
+      var body = lines.join('\n').replace(/\r?\n/g, '\r\n');
+      mailLink.href = 'mailto:' + email + '?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body);
+      gmailLink.href = 'https://mail.google.com/mail/?view=cm&fs=1&to=' + encodeURIComponent(email) +
+        '&su=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body);
+      preview.textContent = 'Para: ' + email + '\nAssunto: ' + subject + '\n\n' + lines.join('\n');
+      showPanel(mailPanel);
+      mailLink.click();
+    };
+
     form.addEventListener('submit', function (e) {
       e.preventDefault();
-      var fields = [radios[0]].concat(Array.prototype.slice.call(textFields));
+      alertBox.hidden = true;
+      var fields = [radios[0]].concat(Array.prototype.slice.call(requiredFields));
       var firstInvalid = null;
       fields.forEach(function (el) {
         if (!check(el) && !firstInvalid) firstInvalid = el;
@@ -291,33 +374,35 @@
         return;
       }
 
-      var equipment = chosen().value;
-      var lines = [
-        'Solicitação de reserva de equipamento do LabSEL',
-        '',
-        'Equipamento: ' + equipment,
-        'Nome do solicitante: ' + fieldValue('nome'),
-        'Telefone para contato: ' + fieldValue('telefone'),
-        'Projeto vinculado: ' + fieldValue('projeto'),
-        '',
-        'Descrição e objetivo da demanda:',
-        fieldValue('descricao')
-      ];
-      if (!qtyGroup.hidden) lines.push('', 'Quantidade: ' + fieldValue('quantidade'));
-      if (!agendaGroup.hidden) lines.push('', 'Data desejada: ' + formatDate(fieldValue('data')), 'Período: ' + fieldValue('periodo'));
-      lines.push('', 'Solicitação enviada pelo site do GSEL.');
+      var data = collect();
+      if (!endpoint) {
+        sendByEmail(data);
+        return;
+      }
 
-      var subject = 'Reserva de equipamento: ' + equipment + ' (' + fieldValue('nome') + ')';
-      var body = lines.join('\n').replace(/\r?\n/g, '\r\n');
-      mailLink.href = 'mailto:' + email + '?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body);
-      gmailLink.href = 'https://mail.google.com/mail/?view=cm&fs=1&to=' + encodeURIComponent(email) +
-        '&su=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body);
-      preview.textContent = 'Para: ' + email + '\nAssunto: ' + subject + '\n\n' + lines.join('\n');
+      // Corpo em texto simples não dispara a checagem prévia de CORS; o Apps Script lê o JSON mesmo assim.
+      setBusy(true);
+      fetch(endpoint, { method: 'POST', body: JSON.stringify(data) })
+        .then(function (res) { return res.json(); })
+        .then(function (r) {
+          if (r && r.ok) {
+            document.getElementById('reserva-enviada-email').textContent = data.email;
+            showPanel(sentPanel);
+          } else {
+            showAlert((r && r.erro) || 'Não foi possível enviar a solicitação. Tente novamente.', false);
+          }
+        })
+        .catch(function () {
+          showAlert('Não foi possível conectar ao sistema de reservas. Verifique sua conexão e tente de novo, ou envie a solicitação por e-mail.', true);
+        })
+        .finally(function () {
+          setBusy(false);
+        });
+    });
 
-      form.hidden = true;
-      done.hidden = false;
-      done.focus();
-      mailLink.click();
+    mailFallback.addEventListener('click', function () {
+      alertBox.hidden = true;
+      sendByEmail(collect());
     });
 
     copyBtn.addEventListener('click', function () {
@@ -347,14 +432,18 @@
       }
     });
 
-    document.getElementById('reserva-nova').addEventListener('click', function () {
-      form.reset();
-      form.querySelectorAll('[aria-invalid]').forEach(function (el) { el.removeAttribute('aria-invalid'); });
-      form.querySelectorAll('.field-error').forEach(function (el) { el.textContent = ''; });
-      updateEquipment();
-      done.hidden = true;
-      form.hidden = false;
-      radios[0].focus();
+    document.querySelectorAll('[data-reserva-nova]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        form.reset();
+        form.querySelectorAll('[aria-invalid]').forEach(function (el) { el.removeAttribute('aria-invalid'); });
+        form.querySelectorAll('.field-error').forEach(function (el) { el.textContent = ''; });
+        alertBox.hidden = true;
+        updateEquipment();
+        sentPanel.hidden = true;
+        mailPanel.hidden = true;
+        form.hidden = false;
+        radios[0].focus();
+      });
     });
   }
 
