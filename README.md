@@ -32,7 +32,7 @@ assets/
 | Atuação (Pesquisa e Desenvolvimento) | `#atuacao` |
 | Membros Atuais | `#equipe` |
 | InfoGSEL (painel do Looker Studio) | `#infogsel` |
-| LabSEL — Compartilhamento Multiusuário | `#labsel` |
+| Reserva de Equipamentos (LabSEL) | `#reservas` |
 | Galeria | `#galeria` |
 | Localização | `#localizacao` |
 | Vínculos institucionais | `#vinculos` |
@@ -48,6 +48,15 @@ Todo o conteúdo está em `index.html`, com um comentário marcando o início de
 
 1. Salve duas versões da foto: uma com ~1600 px de largura em `assets/img/fotos/` e uma com ~760 px em `assets/img/fotos/thumb/`, com o mesmo nome de arquivo.
 2. Copie um bloco `<li class="photo-card">…</li>` em `#galeria` e ajuste os caminhos, a etiqueta (`data-tag` e `photo-tag`), a legenda e o texto alternativo (`alt`).
+
+**Formulário de reserva (`#reservas`):** os dados não vão para nenhum servidor. Ao enviar, o site monta um e-mail com as respostas e abre o aplicativo de e-mail do visitante, endereçado ao e-mail do atributo `data-email` do `<form>`. Se o aplicativo não abrir, o visitante pode usar o Gmail ou copiar a mensagem.
+
+- Para trocar o e-mail de destino, altere `data-email` no `<form id="form-reserva">` e os textos que mostram o endereço (aviso de privacidade e painel de confirmação).
+- Para incluir um equipamento, copie um bloco `<label class="equip">…</label>` e ajuste o `value`, o nome e os atributos:
+  - `data-descricao`: pergunta exibida no campo de descrição;
+  - `data-quantidade`: mostra o campo de quantidade com essa pergunta;
+  - `data-nota`: observação exibida abaixo da pergunta de quantidade (opcional);
+  - `data-agenda="sim"`: mostra os campos de data desejada e período.
 
 **Cores e fontes:** ficam nas variáveis do início de `assets/css/style.css`, conforme o Guia da Marca GSEL v2.1 (Azul Profundo `#142B47`, Ciano GSEL `#37C0D5`, Azul Elétrico `#153A72`, Cinza Névoa `#EEF2F5`, Grafite `#5C6B7A`; famílias Saira, Saira Semi Condensed e Saira Condensed).
 

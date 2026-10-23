@@ -163,6 +163,201 @@
     });
   }
 
+  /* Reserva de equipamentos: monta um e-mail com os dados do formulário */
+  var form = document.getElementById('form-reserva');
+  if (form) {
+    var email = form.getAttribute('data-email');
+    var done = document.getElementById('reserva-pronta');
+    var radios = form.querySelectorAll('input[name="equipamento"]');
+    var descLabel = document.getElementById('descricao-rotulo');
+    var descDefault = descLabel.textContent;
+    var qtyGroup = document.getElementById('grupo-quantidade');
+    var qtyLabel = document.getElementById('quantidade-rotulo');
+    var qtyNote = document.getElementById('quantidade-nota');
+    var agendaGroup = document.getElementById('grupo-agenda');
+    var phone = document.getElementById('telefone');
+    var date = document.getElementById('data');
+    var preview = document.getElementById('reserva-texto');
+    var mailLink = document.getElementById('reserva-email');
+    var gmailLink = document.getElementById('reserva-gmail');
+    var copyBtn = document.getElementById('reserva-copiar');
+    var textFields = form.querySelectorAll('input:not([type="radio"]), textarea, select');
+
+    var chosen = function () {
+      return form.querySelector('input[name="equipamento"]:checked');
+    };
+
+    var setError = function (el, msg) {
+      var group = el.type === 'radio' ? radios : [el];
+      Array.prototype.forEach.call(group, function (item) {
+        if (msg) item.setAttribute('aria-invalid', 'true');
+        else item.removeAttribute('aria-invalid');
+      });
+      var box = document.getElementById((el.type === 'radio' ? el.name : el.id) + '-erro');
+      if (box) box.textContent = msg;
+    };
+
+    var toggleGroup = function (group, on) {
+      group.hidden = !on;
+      group.querySelectorAll('input, select, textarea').forEach(function (el) {
+        el.disabled = !on;
+        if (!on) setError(el, '');
+      });
+    };
+
+    // Rótulos e campos extras de cada equipamento vêm dos atributos data-* do HTML.
+    var updateEquipment = function () {
+      var choice = chosen();
+      descLabel.textContent = choice ? choice.getAttribute('data-descricao') : descDefault;
+      var qty = choice && choice.getAttribute('data-quantidade');
+      toggleGroup(qtyGroup, !!qty);
+      if (qty) {
+        var note = choice.getAttribute('data-nota') || '';
+        qtyLabel.textContent = qty;
+        qtyNote.textContent = note;
+        qtyNote.hidden = !note;
+      }
+      toggleGroup(agendaGroup, !!(choice && choice.getAttribute('data-agenda')));
+    };
+
+    var check = function (el) {
+      if (el.disabled) return true;
+      var value = el.value.trim();
+      var msg = '';
+      if (el.type === 'radio') {
+        if (!chosen()) msg = 'Escolha o equipamento que deseja reservar.';
+      } else if (!value) {
+        msg = el.tagName === 'SELECT' ? 'Selecione uma opção.' : 'Preencha este campo.';
+      } else if (el === phone) {
+        var digits = value.replace(/\D/g, '').length;
+        if (digits < 10 || digits > 11) msg = 'Informe o telefone com DDD, por exemplo (87) 91234 5678.';
+      } else if (el.type === 'number') {
+        var n = Number(value);
+        if (!(n >= 1 && Math.floor(n) === n)) msg = 'Informe uma quantidade a partir de 1.';
+      } else if (el === date && value < date.min) {
+        msg = 'Escolha uma data a partir de hoje.';
+      }
+      setError(el, msg);
+      return !msg;
+    };
+
+    var fieldValue = function (id) {
+      return document.getElementById(id).value.trim();
+    };
+
+    var formatDate = function (iso) {
+      var parts = iso.split('-');
+      return parts[2] + '/' + parts[1] + '/' + parts[0];
+    };
+
+    var now = new Date();
+    date.min = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+
+    phone.addEventListener('input', function () {
+      var d = phone.value.replace(/\D/g, '').slice(0, 11);
+      var cut = d.length === 11 ? 7 : 6;
+      if (d.length > cut) phone.value = '(' + d.slice(0, 2) + ') ' + d.slice(2, cut) + ' ' + d.slice(cut);
+      else if (d.length > 2) phone.value = '(' + d.slice(0, 2) + ') ' + d.slice(2);
+      else phone.value = d;
+    });
+
+    radios.forEach(function (radio) {
+      radio.addEventListener('change', function () {
+        updateEquipment();
+        setError(radio, '');
+      });
+    });
+
+    textFields.forEach(function (el) {
+      el.addEventListener('blur', function () {
+        if (el.value.trim()) check(el);
+      });
+      el.addEventListener('input', function () {
+        if (el.getAttribute('aria-invalid')) check(el);
+      });
+    });
+
+    updateEquipment();
+
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+      var fields = [radios[0]].concat(Array.prototype.slice.call(textFields));
+      var firstInvalid = null;
+      fields.forEach(function (el) {
+        if (!check(el) && !firstInvalid) firstInvalid = el;
+      });
+      if (firstInvalid) {
+        firstInvalid.focus();
+        return;
+      }
+
+      var equipment = chosen().value;
+      var lines = [
+        'Solicitação de reserva de equipamento do LabSEL',
+        '',
+        'Equipamento: ' + equipment,
+        'Nome do solicitante: ' + fieldValue('nome'),
+        'Telefone para contato: ' + fieldValue('telefone'),
+        'Projeto vinculado: ' + fieldValue('projeto'),
+        '',
+        'Descrição e objetivo da demanda:',
+        fieldValue('descricao')
+      ];
+      if (!qtyGroup.hidden) lines.push('', 'Quantidade: ' + fieldValue('quantidade'));
+      if (!agendaGroup.hidden) lines.push('', 'Data desejada: ' + formatDate(fieldValue('data')), 'Período: ' + fieldValue('periodo'));
+      lines.push('', 'Solicitação enviada pelo site do GSEL.');
+
+      var subject = 'Reserva de equipamento: ' + equipment + ' (' + fieldValue('nome') + ')';
+      var body = lines.join('\n').replace(/\r?\n/g, '\r\n');
+      mailLink.href = 'mailto:' + email + '?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body);
+      gmailLink.href = 'https://mail.google.com/mail/?view=cm&fs=1&to=' + encodeURIComponent(email) +
+        '&su=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body);
+      preview.textContent = 'Para: ' + email + '\nAssunto: ' + subject + '\n\n' + lines.join('\n');
+
+      form.hidden = true;
+      done.hidden = false;
+      done.focus();
+      mailLink.click();
+    });
+
+    copyBtn.addEventListener('click', function () {
+      var flash = function (label) {
+        copyBtn.textContent = label;
+        setTimeout(function () { copyBtn.textContent = 'Copiar mensagem'; }, 3000);
+      };
+      var copied = function () { flash('Mensagem copiada!'); };
+      var fallback = function () {
+        var area = document.createElement('textarea');
+        area.value = preview.textContent;
+        area.setAttribute('readonly', '');
+        area.style.position = 'fixed';
+        area.style.opacity = '0';
+        document.body.appendChild(area);
+        area.select();
+        var ok = false;
+        try { ok = document.execCommand('copy'); } catch (err) { ok = false; }
+        document.body.removeChild(area);
+        if (ok) copied();
+        else flash('Selecione o texto abaixo e copie');
+      };
+      if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(preview.textContent).then(copied, fallback);
+      } else {
+        fallback();
+      }
+    });
+
+    document.getElementById('reserva-nova').addEventListener('click', function () {
+      form.reset();
+      form.querySelectorAll('[aria-invalid]').forEach(function (el) { el.removeAttribute('aria-invalid'); });
+      form.querySelectorAll('.field-error').forEach(function (el) { el.textContent = ''; });
+      updateEquipment();
+      done.hidden = true;
+      form.hidden = false;
+      radios[0].focus();
+    });
+  }
+
   /* Ano no rodapé */
   var year = document.querySelector('[data-year]');
   if (year) year.textContent = new Date().getFullYear();
