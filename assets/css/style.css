@@ -165,6 +165,52 @@ ol {
 .measure-6xl { max-width: 72rem; margin-left: auto; margin-right: auto; }
 .measure-7xl { max-width: 80rem; margin-left: auto; margin-right: auto; }
 
+/* ---------- Barra de rolagem ---------- */
+
+/* Chrome, Edge e Safari: trilho Cinza Névoa e pegador no gradiente da marca */
+::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+
+::-webkit-scrollbar-track,
+::-webkit-scrollbar-corner {
+  background: var(--nevoa);
+}
+
+::-webkit-scrollbar-thumb {
+  border: 3px solid var(--nevoa);
+  border-radius: 999px;
+  background: linear-gradient(180deg, var(--ciano), var(--azul-eletrico));
+}
+
+::-webkit-scrollbar-thumb:horizontal {
+  background: linear-gradient(90deg, var(--ciano), var(--azul-eletrico));
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, var(--ciano-escuro), var(--azul-profundo));
+}
+
+::-webkit-scrollbar-thumb:horizontal:hover {
+  background: linear-gradient(90deg, var(--ciano-escuro), var(--azul-profundo));
+}
+
+.carousel::-webkit-scrollbar { height: 8px; }
+.carousel::-webkit-scrollbar-track { background: transparent; }
+.carousel::-webkit-scrollbar-thumb { border: 0; }
+
+/* Firefox aceita só cores sólidas. Fica dentro do @supports porque, no Chrome,
+   scrollbar-color desliga os estilos ::-webkit-scrollbar acima. */
+@supports not selector(::-webkit-scrollbar) {
+  html { scrollbar-color: var(--azul-eletrico) var(--nevoa); }
+
+  .carousel {
+    scrollbar-width: thin;
+    scrollbar-color: var(--azul-eletrico) transparent;
+  }
+}
+
 /* ---------- Seções ---------- */
 
 .section {
@@ -1719,8 +1765,6 @@ body.menu-open { overflow: hidden; }
   overflow-x: auto;
   scroll-snap-type: x mandatory;
   scroll-padding: 0 1rem;
-  scrollbar-width: thin;
-  scrollbar-color: #b7c3cf transparent;
   overscroll-behavior-x: contain;
 }
 
